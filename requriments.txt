@@ -1,0 +1,10 @@
+Wikipedia-API
+langchain_groq
+youtube_transcript_api
+langchain-community
+chromadb
+sentence-transformers
+python-dotenv
+duckduckgo-search
+requests
+beautifulsoup4
