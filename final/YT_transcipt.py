@@ -122,11 +122,11 @@ def store_in_vector_db(
 ) -> None:
     """Store video data in ChromaDB."""
     try:
-        doc_id = str(uuid.uuid4())
+        # doc_id = str(uuid.uuid4())
         document = Document(
             page_content=f"Video URL: {video_url}\nTranscript: {transcript}\nSummary: {summary}",
             metadata=metadata,
-            id=doc_id
+            # id=doc_id
         )
         vector_store.add_documents([document])
         logger.info(f"Stored data for video {video_url} in vector database.")
