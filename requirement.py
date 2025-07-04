@@ -1,0 +1,10 @@
+streamlit
+langchain_core
+langchain_groq
+langchain_community
+Wikipedia-API
+duckduckgo-search
+youtube-transcript-api
+sentence-transformers
+chromadb
+google

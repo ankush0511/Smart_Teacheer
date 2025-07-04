@@ -24,7 +24,7 @@ if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY is not set.")
 
 # Initialize Groq LLM
-llm = ChatGroq(model_name="llama-3.3-70b-versatile", api_key=GROQ_API_KEY, temperature=0.7, max_tokens=800)
+llm = ChatGroq(model_name="gemma2-9b-it", api_key=GROQ_API_KEY)
 
 # Initialize Wikipedia API
 wiki = wikipediaapi.Wikipedia("AcademicExplainer/1.0", "en")
@@ -84,6 +84,8 @@ def process_syllabus(topics: List[str]) -> List[Dict]:
         if not explanation:
             # Fallback to DuckDuckGo
             explanation = fetch_duckduckgo_explanation(topic)
+            if not explanation:
+                explanation = llm.invoke(topic)
         
         # Fetch YouTube video
         video_data = fetch_youtube_video(topic)

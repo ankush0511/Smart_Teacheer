@@ -5,45 +5,77 @@ import wikipediaapi
 from logger import logger
 from llm import llm
 
-
 wiki = wikipediaapi.Wikipedia("AcademicExplainer/1.0", "en")
-
 EDUCATION_LEVEL = "college"
+
+def build_prompt(content: str) -> str:
+    """Constructs an education-level-specific prompt for LLM summarization."""
+    return f"""
+                You are an expert educator.
+
+                Summarize the following content for a {EDUCATION_LEVEL} student in 150-200 words.
+
+                - If the content is factual (e.g., definitions, facts, processes), format it as clear and concise bullet points.
+                - If the content is conceptual or abstract (e.g., theories, ideas), give a full structured explanation.
+                - Avoid complex jargon and use age-appropriate language.
+
+                Content:
+                {content[:1500]}
+                """
 
 def fetch_wikipedia_explanation(topic: str) -> Optional[str]:
     """Fetch explanation from Wikipedia."""
     try:
         page = wiki.page(topic)
         if page.exists():
-            summary = page.summary[:1500]  # Increased limit for more context
-            prompt = f"Summarize the following text for a {EDUCATION_LEVEL} student in 150-200 words: {summary}"
+            summary = page.summary
+            prompt = build_prompt(summary)
             response = llm.invoke(prompt)
             return response.content.strip()
+        logger.info(f"Wikipedia page not found for topic: {topic}")
         return None
     except Exception as e:
-        logger.warning(f"Wikipedia fetch failed for {topic}: {e}")
+        logger.warning(f"Wikipedia fetch failed for '{topic}': {e}")
         return None
 
 def fetch_duckduckgo_explanation(topic: str) -> str:
     """Fetch explanation from DuckDuckGo as fallback."""
     try:
         with DDGS() as ddgs:
-            results = list(ddgs.text(f"{topic} explanation", max_results=2))  # Increased results for reliability
+            results = list(ddgs.text(f"{topic} explanation", max_results=2))
             if results:
                 content = " ".join([result.get("body", "") for result in results])
-                prompt = f"Summarize the following text for a {EDUCATION_LEVEL} student in 150-200 words: {content[:1500]}"
+                prompt = build_prompt(content)
                 response = llm.invoke(prompt)
                 return response.content.strip()
-            return f"No reliable content found for {topic}."
+            return f"⚠️ No reliable content found for '{topic}'."
     except Exception as e:
-        logger.error(f"DuckDuckGo fetch failed for {topic}: {e}")
-        return f"Error fetching content for {topic}: {e}"
+        logger.error(f"DuckDuckGo fetch failed for '{topic}': {e}")
+        return f"⚠️ Error fetching content for '{topic}': {e}"
+
+# def fetch_youtube_video(topic: str) -> Dict:
+#     """Fetch YouTube video link using DuckDuckGo."""
+#     try:
+#         with DDGS() as ddgs:
+#             results = list(ddgs.videos(f"{topic} tutorial", max_results=2))
+#             if results:
+#                 video = results[0]
+#                 return {
+#                     "url": video.get("content", ""),
+#                     "title": video.get("title", "Unknown"),
+#                     "description": video.get("description", "")
+#                 }
+#             logger.info(f"No YouTube results found for '{topic}'.")
+#             return {}
+#     except Exception as e:
+#         logger.error(f"YouTube video fetch failed for '{topic}': {e}")
+#         return {}
 
 def fetch_youtube_video(topic: str) -> Dict:
-    """Fetch YouTube video link using DuckDuckGo."""
+    """Fetch YouTube video link using DuckDuckGo. Fallback to YouTube search URL if no video is found."""
     try:
         with DDGS() as ddgs:
-            results = list(ddgs.videos(f"{topic} tutorial", max_results=1))
+            results = list(ddgs.videos(f"{topic} tutorial", max_results=2))
             if results:
                 video = results[0]
                 return {
@@ -51,7 +83,17 @@ def fetch_youtube_video(topic: str) -> Dict:
                     "title": video.get("title", "Unknown"),
                     "description": video.get("description", "")
                 }
-            return {}
+            else:
+                logger.info(f"No YouTube video results found for '{topic}'. Falling back to YouTube search URL.")
+                return {
+                    "url": f"https://www.youtube.com/results?search_query={topic.replace(' ', '+')}+tutorial",
+                    "title": "Explore on YouTube",
+                    "description": "No direct video found. Here's a search link to explore related videos."
+                }
     except Exception as e:
-        logger.error(f"YouTube video fetch failed for {topic}: {e}")
-        return {}
+        logger.error(f"YouTube video fetch failed for '{topic}': {e}")
+        return {
+            "url": f"https://www.youtube.com/results?search_query={topic.replace(' ', '+')}+tutorial",
+            "title": "Explore on YouTube (Fallback)",
+            "description": f"⚠️ Error fetching video. You can still try this search link."
+        }
