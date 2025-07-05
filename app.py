@@ -7,8 +7,14 @@ from history import fetch_topic_history, disambiguate_topic
 from embedding import vector_store
 from fetch_data import fetch_wikipedia_explanation, fetch_duckduckgo_explanation, fetch_youtube_video
 from logger import logger
+# from notion_client import Client
 
 
+# # Initialize Notion client with your integration token
+# notion = Client(auth="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")
+
+# # Your Notion database ID
+# NOTION_DATABASE_ID = "226ed05bb144801a94fb000c3fa1af7b"
 
 # Streamlit app
 st.title("Academic Explainer")
@@ -37,6 +43,42 @@ if option == "Topic Description & YouTube Link":
                     st.write("**Video Title:**")
                     st.write(result['video_title'])
                     st.markdown("---")
+                    # topic = result["topic"].capitalize()
+                    # explanation = result["explanation"]
+                    # video_url = result["video_url"]
+                    # video_title = result["video_title"]
+                    # try:
+                    #     notion.pages.create(
+                    #         parent={"database_id": NOTION_DATABASE_ID},
+                    #         properties={
+                    #             "Topic": {
+                    #                 "title": [
+                    #                     {
+                    #                         "text": {"content": topic}
+                    #                     }
+                    #                 ]
+                    #             },
+                    #             "Explanation": {
+                    #                 "rich_text": [
+                    #                     {
+                    #                         "text": {"content": explanation[:2000]}  # Notion has limits
+                    #                     }
+                    #                 ]
+                    #             },
+                    #             "Video URL": {
+                    #                 "url": video_url if video_url.startswith("http") else "https://www.youtube.com"
+                    #             },
+                    #             "Video Title": {
+                    #                 "rich_text": [
+                    #                     {
+                    #                         "text": {"content": video_title}
+                    #                     }
+                    #                 ]
+                    #             }
+                    #         }
+                    #     )
+                    # except Exception as e:
+                    #     print(f"❌ Failed to store topic '{topic}' in Notion: {e}")
         else:
             st.warning("Please enter at least one topic.")
 
@@ -90,10 +132,11 @@ elif option == "MCQ Practice":
         st.warning("No topics found in history. Please process some topics or videos first.")
     else:
         selected_topic = st.selectbox("Select a topic to practice MCQs:", topics)
-        
+        # noMcq=st.text_input(int(input("enter the no of question")))
+        num_questions = st.number_input("How many questions?", min_value=1, max_value=20, value=5)
         if st.button("Generate MCQs"):
             with st.spinner("Generating MCQs..."):
-                mcqs = generate_mcqs(selected_topic)
+                mcqs = generate_mcqs(selected_topic,num_questions)
                 if not mcqs:
                     st.error("Failed to generate MCQs. Please try another topic or ensure content is stored.")
                 else:

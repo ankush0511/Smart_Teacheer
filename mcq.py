@@ -11,13 +11,14 @@ EDUCATION_LEVEL = "college"
 
 
 
-def generate_mcqs(topic: str, num_questions: int = 4) -> List[Dict]:
+def generate_mcqs(topic: str, num_questions: int) -> List[Dict]:
     """Generate MCQs for a topic using Groq."""
     try:
         results = vector_store.similarity_search(f"Topic: {topic}", k=1)
         if not results:
             logger.warning(f"No content found for topic {topic}")
             return []
+            print(num_questions)
         
         content = results[0].page_content
         prompt = f"""
