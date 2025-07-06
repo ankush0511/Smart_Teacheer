@@ -8,9 +8,6 @@ import time
 from langchain_core.documents import Document
 
 EDUCATION_LEVEL = "college"
-
-
-
 def generate_mcqs(topic: str, num_questions: int) -> List[Dict]:
     """Generate MCQs for a topic using Groq."""
     try:
@@ -27,9 +24,11 @@ def generate_mcqs(topic: str, num_questions: int) -> List[Dict]:
         - 4 answer options (labeled A, B, C, D)
         - The correct answer (as a letter: A, B, C, or D)
         - A brief explanation for the correct answer
+        - dont add the single quotes in question instead add double quotes.
         Return the questions in valid JSON format. Do not use the example content in the output.
+        Return *only* valid JSON without markdown formatting or extra explanation.
 
-        Content: {content[:1500]}
+
 
         JSON format:
         [

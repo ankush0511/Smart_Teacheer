@@ -14,7 +14,7 @@ if not GROQ_API_KEY:
 
 # Initialize Groq LLM
 try:
-    llm = ChatGroq(model_name="llama-3.3-70b-versatile", api_key=GROQ_API_KEY, temperature=0.7, max_tokens=800)
+    llm = ChatGroq(model_name="gemma2-9b-it", api_key=GROQ_API_KEY, temperature=0.7)
 except Exception as e:
     st.error(f"Failed to initialize Groq LLM: {e}")
     st.stop()
