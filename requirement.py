@@ -8,3 +8,6 @@ youtube-transcript-api
 sentence-transformers
 chromadb
 google
+reportlab 
+markdown 
+beautifulsoup4

@@ -9,73 +9,6 @@ from fetch_data import fetch_wikipedia_explanation, fetch_duckduckgo_explanation
 from logger import logger
 import json
 
-import re
-import streamlit as st
-from fpdf import FPDF
-import base64
-
-# Function to create download link for PDF
-def create_download_link(val, filename):
-    b64 = base64.b64encode(val)  # val is bytes
-    return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.pdf">📥 Download PDF</a>'
-
-# Helper function to clean text for latin-1 encoding
-def clean_text_for_pdf(text):
-    # Replace common Unicode characters with latin-1 compatible ones
-    replacements = {
-        '\u2013': '-',  # en-dash to hyphen
-        '\u2014': '-',  # em-dash to hyphen
-        '\u2018': "'",  # left single quote to straight quote
-        '\u2019': "'",  # right single quote to straight quote
-        '\u201c': '"',  # left double quote to straight quote
-        '\u201d': '"',  # right double quote to straight quote
-        '\u2026': '...'  # ellipsis to three dots
-    }
-    for unicode_char, replacement in replacements.items():
-        text = text.replace(unicode_char, replacement)
-    # Optionally, remove any remaining non-latin-1 characters
-    return ''.join(c for c in text if ord(c) < 256 or c.isspace())
-
-# Function to generate PDF from JSON data with bold formatting
-def generate_pdf_from_json(json_data):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
-
-    for item in json_data:
-        topic = clean_text_for_pdf(item.get('topic', '').capitalize())
-        explanation = clean_text_for_pdf(item.get('explanation', ''))
-
-        # Render topic in bold
-        pdf.set_font("Arial", 'B', 14)
-        pdf.multi_cell(0, 10, topic)
-        pdf.ln(2)
-
-        # Parse explanation for **bold** formatting
-        pdf.set_font("Arial", '', 12)
-        parts = re.split(r'\*\*(.*?)\*\*', explanation)
-        for i, part in enumerate(parts):
-            if i % 2 == 0:
-                # Non-bold text
-                pdf.set_font("Arial", '', 14)
-            else:
-                # Bold text (between ** markers)
-                pdf.set_font("Arial", 'B', 12)
-            if part:
-                pdf.write(5, part)
-        pdf.ln(5)  # Add spacing after explanation
-
-    return pdf.output(dest="S").encode("latin-1")
-
-
-# Initialize session state to persist results
-if 'results' not in st.session_state:
-    st.session_state.results = None
-
-
-
-
 st.title("Academic Explainer")
 
 # Sidebar for option selection
@@ -92,39 +25,39 @@ if option == "Topic Description & YouTube Link":
         if syllabus_input:
             topics = [topic.strip() for topic in syllabus_input.split(",")]
             with st.spinner("Processing topics..."):
-                # Process topics and store results in session state
-                st.session_state.results = process_syllabus(topics)
+                results = process_syllabus(topics)
 
-                # Save results to JSON file
                 with open("syllabus_results.json", "w", encoding="utf-8") as f:
-                    json.dump(st.session_state.results, f, indent=4, ensure_ascii=False)
+                    json.dump(results, f, indent=4, ensure_ascii=False)
+
+                for result in results:
+                    st.subheader(f"Topic: {result['topic'].capitalize()}")
+                    st.write("**Explanation:**")
+                    st.write(result['explanation'])
+                    st.write("**YouTube Link:**")
+                    st.write(result['video_url'])
+                    st.write("**Video Title:**")
+                    st.write(result['video_title'])
+                    st.markdown("---")
         else:
             st.warning("Please enter at least one topic.")
+        # Load JSON data
+        try:
+            with open("syllabus_results.json", "r", encoding="utf-8") as f:
+                results = json.load(f)
+        except FileNotFoundError:
+            st.error("❌ 'syllabus_results.json' not found. Please run the topic processor first.")
+            results = None
 
-    # Display results if available in session state
-    if st.session_state.results:
-        for result in st.session_state.results:
-            st.subheader(f"Topic: {result['topic'].capitalize()}")
-            st.write("**Explanation:**")
-            st.write(result['explanation'])
-            st.write("**YouTube Link:**")
-            st.write(result['video_url'])
-            st.write("**Video Title:**")
-            st.write(result['video_title'])
-            st.markdown("---")
+        if results:
+            st.title("📄 Export Syllabus Explanation as PDF")
 
-    # Separate PDF generation section
-    st.title("📄 Export Syllabus Explanation as PDF")
-    if st.button("Generate PDF"):
-        if st.session_state.results:
-            with st.spinner("Generating PDF..."):
-                pdf_bytes = generate_pdf_from_json(st.session_state.results)
+            if st.button("Generate PDF"):
+                pdf_bytes = generate_pdf_from_json(results)
                 html_link = create_download_link(pdf_bytes, "syllabus_explanations")
+
                 st.success("✅ PDF generated successfully!")
                 st.markdown(html_link, unsafe_allow_html=True)
-        else:
-            st.error("❌ No results available. Please process topics first.")
- 
 
 elif option == "YouTube Transcript & Summary":
     st.header("YouTube Transcript & Summary")
