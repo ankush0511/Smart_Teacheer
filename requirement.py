@@ -11,3 +11,5 @@ google
 reportlab 
 markdown 
 beautifulsoup4
+ddgs
+fpdf
