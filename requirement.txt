@@ -16,3 +16,6 @@ langchain-groq
 pypdf
 graphviz
 python-dotenv
+ddgs
+fpdf
+
