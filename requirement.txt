@@ -11,5 +11,11 @@ google
 reportlab 
 markdown 
 beautifulsoup4
+langchain
+langchain-groq
+pypdf
+graphviz
+python-dotenv
 ddgs
 fpdf
+
