@@ -32,8 +32,7 @@ def validate_input_content(content: str, groq_api_key: str) -> ValidationRespons
         chain = prompt | model | parser
         response = chain.invoke({"content": content})
         return response
+    
     except Exception as e:
-        # If validation fails for any reason, assume it's a valid topic to avoid blocking the user.
-        # Log the error for debugging.
         print(f"Validation chain failed: {e}")
         return {"is_valid_topic": True, "reason": "Validation process encountered an error."}

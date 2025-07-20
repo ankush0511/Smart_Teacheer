@@ -14,18 +14,14 @@ def generate_study_materials(content: str, groq_api_key: str) -> dict:
     Generates a mind map and flashcards using LangChain and ChatGroq.
     """
     try:
-        # 1. Initialize the ChatGroq model
         model = ChatGroq(
             temperature=0,
             model_name="llama3-8b-8192",
             api_key=groq_api_key
         )
 
-        # 2. Set up the output parser
         parser = JsonOutputParser(pydantic_object=StudyGuide)
 
-        # 3. Define the FINAL Prompt Template
-        # This prompt strictly enforces a topics-only hierarchy for the mind map.
         prompt = PromptTemplate(
             template="""
             You are a world-class AI expert at creating deeply hierarchical outlines.
@@ -56,10 +52,8 @@ def generate_study_materials(content: str, groq_api_key: str) -> dict:
             partial_variables={"format_instructions": parser.get_format_instructions()},
         )
 
-        # 4. Create the LangChain chain
         chain = prompt | model | parser
 
-        # 5. Invoke the chain with the user's content
         response = chain.invoke({"content": content})
         return response
 

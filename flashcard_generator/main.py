@@ -23,13 +23,11 @@ st.set_page_config(page_title="AI Study Assistant", layout="wide")
 st.title("🧠 AI-Powered Study Assistant")
 st.markdown("Generate a **deep topic-only mind map** and flashcards from your notes, PDFs, or a topic name.")
 
-# Retrieve Groq API key
 groq_api_key = os.getenv("GROQ_API_KEY")
 if not groq_api_key:
     st.warning("GROQ_API_KEY not found. Please add it to your .env file or enter it below.")
     groq_api_key = st.text_input("Enter your GROQ API Key:", type="password")
 
-# Initialize session state
 if 'study_guide' not in st.session_state:
     st.session_state.study_guide = None
 if 'mind_map_image' not in st.session_state:
@@ -74,8 +72,6 @@ with st.sidebar:
                     st.session_state.study_guide = None
                     st.session_state.mind_map_image = None
 
-
-# --- Display Results ---
 
 if st.session_state.study_guide:
     st.markdown("---")
