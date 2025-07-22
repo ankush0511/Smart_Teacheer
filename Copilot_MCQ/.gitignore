@@ -1,0 +1,6 @@
+env/
+tenv/
+.env
+.YT_VECTOR
+YT_VECTOR/
+.tenv

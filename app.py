@@ -1,48 +1,69 @@
 import streamlit as st
-from llm import llm
-from mcq import generate_mcqs, store_mcq_performance
-from processes import process_syllabus, process_youtube_video
-from YT_transcipt import query_vector_db,process_video
-from history import fetch_topic_history, disambiguate_topic
-from embedding import vector_store
-from fetch_data import fetch_wikipedia_explanation, fetch_duckduckgo_explanation, fetch_youtube_video
-from logger import logger
-from pdf_maker import create_download_link,clean_text_for_pdf,generate_pdf_from_json
 import json
+import logging
+from typing import Dict
+import os
+from langchain_groq import ChatGroq
+from Copilot_MCQ.processes import process_syllabus
+from Copilot_MCQ.history import fetch_topic_history
+from Copilot_MCQ.embedding import vector_store
+from Copilot_MCQ.pdf_maker import create_download_link, generate_pdf_from_json
+from Copilot_MCQ.mcq import generate_mcqs, store_mcq_performance
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+# Validate environment
+if not GROQ_API_KEY:
+    st.error("GROQ_API_KEY is not set.")
+    st.stop()
 
-# Initialize session state to persist results
+# Initialize Groq LLM
+try:
+    llm = ChatGroq(model_name="gemma2-9b-it", api_key=GROQ_API_KEY, temperature=0.7)
+except Exception as e:
+    st.error(f"Failed to initialize Groq LLM: {e}")
+    st.stop()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize session state
 if 'results' not in st.session_state:
     st.session_state.results = None
+if 'mcqs' not in st.session_state:
+    st.session_state.mcqs = []
+if 'current_question' not in st.session_state:
+    st.session_state.current_question = 0
+if 'user_answers' not in st.session_state:
+    st.session_state.user_answers = []
+if 'score' not in st.session_state:
+    st.session_state.score = 0
+if 'quiz_started' not in st.session_state:
+    st.session_state.quiz_started = False
+if 'last_submitted' not in st.session_state:
+    st.session_state.last_submitted = None
 
-
-
-
-st.title("Academic Explainer")
+st.title("Academic Copilot")
 
 # Sidebar for option selection
 option = st.sidebar.selectbox(
     "Choose an option:",
-    ["Topic Description & YouTube Link", "YouTube Transcript & Summary", "MCQ Practice"]
+    ["Academic Copilot", "MCQ Practice"]
 )
 
-if option == "Topic Description & YouTube Link":
-    st.header("Topic Description & YouTube Link")
+if option == "Academic Copilot":
+    st.header("Academic Copilot")
     syllabus_input = st.text_input("Enter syllabus topics (comma-separated, e.g., Photosynthesis, Quick Sort):")
     
     if st.button("Process Topics"):
         if syllabus_input:
             topics = [topic.strip() for topic in syllabus_input.split(",")]
             with st.spinner("Processing topics..."):
-                # Process topics and store results in session state
                 st.session_state.results = process_syllabus(topics)
-
-                # Save results to JSON file
                 with open("syllabus_results.json", "w", encoding="utf-8") as f:
                     json.dump(st.session_state.results, f, indent=4, ensure_ascii=False)
         else:
             st.warning("Please enter at least one topic.")
 
-    # Display results if available in session state
     if st.session_state.results:
         for result in st.session_state.results:
             st.subheader(f"Topic: {result['topic'].capitalize()}")
@@ -54,7 +75,6 @@ if option == "Topic Description & YouTube Link":
             st.write(result['video_title'])
             st.markdown("---")
 
-    # Separate PDF generation section
     st.title("📄 Export Syllabus Explanation as PDF")
     if st.button("Generate PDF"):
         if st.session_state.results:
@@ -65,49 +85,6 @@ if option == "Topic Description & YouTube Link":
                 st.markdown(html_link, unsafe_allow_html=True)
         else:
             st.error("❌ No results available. Please process topics first.")
- 
-
-elif option == "YouTube Transcript & Summary":
-    st.header("YouTube Transcript & Summary")
-    video_url = st.text_input("Enter a YouTube video URL:")
-    title = st.text_input("Enter a title for the video (optional):", value="Unknown")
-    
-    if st.button("Process Video"):
-        if video_url:
-            with st.spinner("Processing video..."):
-                result = process_youtube_video(video_url, title)
-                st.subheader("Video Details")
-                st.write("**Video URL:**")
-                st.write(result['video_url'])
-                st.write("**Transcript (excerpt):**")
-                transcript = result['transcript']
-                st.write(transcript[:500] + '...' if len(transcript) > 500 else transcript)
-                st.write("**Summary:**")
-                st.write(result['summary'])
-                st.write(f"**Stored in vector DB:** {'✅' if result['stored'] else '❌'}")
-                
-                st.subheader("Ask a Question About the Video")
-                query = st.text_input("Enter your question (or leave blank to skip):")
-                if query and st.button("Submit Query"):
-                    with st.spinner("Searching database..."):
-                        responses = query_vector_db(query)
-                        if responses:
-                            st.subheader("Query Results")
-                            for resp in responses:
-                                st.write("**Video URL:**")
-                                st.write(resp['video_url'])
-                                st.write("**Title:**")
-                                st.write(resp['title'])
-                                st.write("**Transcript (excerpt):**")
-                                st.write(resp['transcript'][:500] + '...' if len(resp['transcript']) > 500 else resp['transcript'])
-                                st.write("**Summary:**")
-                                st.write(resp['summary'])
-                                st.write(f"**Relevance Score:** {resp['score']:.2f}")
-                                st.markdown("---")
-                        else:
-                            st.info("No relevant information found in the database.")
-        else:
-            st.warning("Please enter a valid YouTube URL.")
 
 elif option == "MCQ Practice":
     st.header("MCQ Practice")
@@ -116,32 +93,35 @@ elif option == "MCQ Practice":
     if not topics:
         st.warning("No topics found in history. Please process some topics or videos first.")
     else:
-        selected_topic = st.selectbox("Select a topic to practice MCQs:", topics)
-        # noMcq=st.text_input(int(input("enter the no of question")))
-        num_questions = st.number_input("How many questions?", min_value=1, max_value=20)
-        if st.button("Generate MCQs"):
+        selected_topic = st.selectbox("Select a topic to practice MCQs:", topics, key="topic_select")
+        num_questions = st.number_input("How many questions?", min_value=1, max_value=20, value=5, key="num_questions")
+        
+        if st.button("Start Quiz", key="start_quiz"):
             with st.spinner("Generating MCQs..."):
-                mcqs = generate_mcqs(selected_topic,num_questions)
-                if not mcqs:
+                st.session_state.mcqs = generate_mcqs(selected_topic, num_questions)
+                st.session_state.current_question = 0
+                st.session_state.user_answers = []
+                st.session_state.score = 0
+                st.session_state.quiz_started = True
+                st.session_state.last_submitted = None
+                if not st.session_state.mcqs:
                     st.error("Failed to generate MCQs. Please try another topic or ensure content is stored.")
-                else:
-                    st.session_state.mcqs = mcqs
-                    st.session_state.current_question = 0
-                    st.session_state.user_answers = []
-                    st.session_state.score = 0
-                
-        if "mcqs" in st.session_state and st.session_state.mcqs:
+                    st.session_state.quiz_started = False
+
+        if st.session_state.quiz_started and st.session_state.mcqs:
             current_q = st.session_state.current_question
             if current_q < len(st.session_state.mcqs):
                 question = st.session_state.mcqs[current_q]
                 st.subheader(f"Question {current_q + 1} of {len(st.session_state.mcqs)}")
                 st.write(question["question"])
                 
-                with st.form(key=f"question_{current_q}"):
+                # Unique form key with timestamp to prevent resubmission issues
+                form_key = f"question_{current_q}_{st.session_state.get('form_counter', 0)}"
+                with st.form(key=form_key):
                     answer = st.radio("Select an answer:", list(question["options"].values()), key=f"answer_{current_q}")
                     submit = st.form_submit_button("Submit Answer")
                     
-                    if submit:
+                    if submit and st.session_state.last_submitted != form_key:
                         selected_option = [k for k, v in question["options"].items() if v == answer][0]
                         is_correct = selected_option == question["correct_answer"]
                         st.session_state.user_answers.append({
@@ -156,10 +136,13 @@ elif option == "MCQ Practice":
                         
                         st.write(f"{'Correct!' if is_correct else 'Incorrect.'}")
                         st.write(f"Explanation: {question['explanation']}")
+                        st.session_state.last_submitted = form_key
                         st.session_state.current_question += 1
-                        st.form_submit_button("Next Question", on_click=lambda: None)
-            
+                        # Increment form counter to ensure unique form key on next question
+                        st.session_state.form_counter = st.session_state.get('form_counter', 0) + 1
+
             else:
+                st.session_state.quiz_started = False
                 score = st.session_state.score
                 total = len(st.session_state.mcqs)
                 st.subheader("Quiz Completed!")
@@ -170,15 +153,16 @@ elif option == "MCQ Practice":
                 for i, ans in enumerate(st.session_state.user_answers):
                     st.write(f"**Question {i+1}:** {ans['question']}")
                     st.write(f"Your Answer: {ans['selected']} ({'Correct' if ans['is_correct'] else 'Incorrect'})")
-                    st.write(f"Correct Answer: {ans['correct']}")
                     st.write(f"Explanation: {ans['explanation']}")
                     st.markdown("---")
                 
-                if st.button("Restart Quiz"):
+                if st.button("Restart Quiz", key="restart_quiz"):
                     st.session_state.mcqs = []
                     st.session_state.current_question = 0
                     st.session_state.user_answers = []
                     st.session_state.score = 0
+                    st.session_state.quiz_started = False
+                    st.session_state.last_submitted = None
 
 st.sidebar.markdown("---")
 st.sidebar.info("Built with Groq, Wikipedia, DuckDuckGo, and ChromaDB.")
