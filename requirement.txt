@@ -18,4 +18,8 @@ graphviz
 python-dotenv
 ddgs
 fpdf
-
+plotly
+pandas
+numpy
+langchain-openai
+faiss-cpu
