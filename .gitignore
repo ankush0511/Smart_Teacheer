@@ -1,3 +1,5 @@
 venv/
 .env
 mind_map.png
+/__pycache__/
+tven/

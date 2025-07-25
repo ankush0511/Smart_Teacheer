@@ -23,3 +23,5 @@ pandas
 numpy
 langchain-openai
 faiss-cpu
+pinecone
+openai
