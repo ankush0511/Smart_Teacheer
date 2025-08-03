@@ -1,8 +1,8 @@
 from pinecone import Pinecone, ServerlessSpec
 from typing import List
-import streamlit as st
+# import streamlit as st
 import uuid
-from yt_transcript_RAG.utills.llm_utils import get_embedding
+from llm_utils import get_embedding
 import os
 from dotenv import load_dotenv
 # Load environment variables
@@ -39,7 +39,7 @@ def index_documents(documents: List[str], index):
             "metadata": {"text": doc.page_content}
         })
     index.upsert(vectors=vectors)
-    st.write(f"Indexed {len(vectors)} documents.")
+    # st.write(f"Indexed {len(vectors)} documents.")
 
 def retrieve_documents(query: str, index, top_k: int = 1) -> List[tuple[str, float]]:
     """Retrieve relevant documents from Pinecone based on query."""

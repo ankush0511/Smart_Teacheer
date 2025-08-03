@@ -1,10 +1,10 @@
 from typing import List, Dict
 import uuid
 import time
-from Copilot_MCQ.fetch_data import fetch_wikipedia_explanation, fetch_duckduckgo_explanation, fetch_youtube_video
-from Copilot_MCQ.embedding import vector_store
+from fetch_data import fetch_wikipedia_explanation, fetch_duckduckgo_explanation, fetch_youtube_video
+from embedding import vector_store
 from langchain_core.documents import Document
-from Copilot_MCQ.history import disambiguate_topic
+from history import disambiguate_topic
 import logging
 from typing import Dict
 import os

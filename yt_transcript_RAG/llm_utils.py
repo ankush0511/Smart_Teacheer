@@ -26,7 +26,7 @@ def generate_answer(query: str, retrieved_docs: List[Tuple[str, float]]) -> str:
     prompt = f"""Context:\n{context}\n\nQuery: {query}\n\nAnswer the query based on the provided context."""
 
     response = openai_client.chat.completions.create(
-        model="provider-2/gpt-3.5-turbo",
+        model="provider-3/gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}

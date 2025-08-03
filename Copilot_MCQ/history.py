@@ -1,5 +1,5 @@
 from typing import List
-from Copilot_MCQ.embedding import vector_store
+from embedding import vector_store
 import logging
 
 # Configure logging

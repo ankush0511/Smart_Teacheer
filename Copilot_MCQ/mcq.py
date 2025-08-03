@@ -1,4 +1,4 @@
-from Copilot_MCQ.embedding import vector_store
+from embedding import vector_store
 from typing import List, Dict
 import json
 import uuid

@@ -14,7 +14,7 @@ client = OpenAI(
     api_key=os.getenv("A4F_API_KEY"),
     base_url=os.getenv("A4F_BASE_URL"),
 )
-llm=ChatOpenAI(model_name="provider-2/gpt-3.5-turbo")
+# llm=ChatOpenAI(model_name="provider-2/gpt-3.5-turbo")
 # Initialize embeddings
 embeddings = OpenAIEmbeddings(
     model="provider-3/text-embedding-ada-002",

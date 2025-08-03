@@ -50,11 +50,11 @@ def get_transcript_and_summary(video_id: str) -> Tuple[str, str]:
         combined_text = " ".join(snippet.text for snippet in snippets)
 
         if lan == 'hi':
-            text_split = RecursiveCharacterTextSplitter(chunk_size=900, chunk_overlap=20)
+            text_split = RecursiveCharacterTextSplitter(chunk_size=7000, chunk_overlap=200)
             tsplit = text_split.split_text(combined_text)
             for i in tsplit:
                 llm = ChatGroq(model='gemma2-9b-it', api_key=GROQ_API_KEY)
-                prompt = f"""Translate the following Hindi text into fluent English. Return only the translated English text without any explanation:\n\n{i}"""
+                prompt = f"""Translate the following Hindi text into fluent English. Return only the translated English text without any explanation:\n{i}"""
                 result = llm.invoke(prompt)
                 time.sleep(1)
                 final_trans += result.content + " "
@@ -64,7 +64,7 @@ def get_transcript_and_summary(video_id: str) -> Tuple[str, str]:
                 time.sleep(3)
         else:
             final_trans = combined_text
-            text_split = RecursiveCharacterTextSplitter(chunk_size=900, chunk_overlap=20)
+            text_split = RecursiveCharacterTextSplitter(chunk_size=7000, chunk_overlap=200)
             tsplit = text_split.split_text(combined_text)
             for i in tsplit:
                 llm = ChatGroq(model='gemma2-9b-it', api_key=GROQ_API_KEY)
